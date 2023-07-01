@@ -1,0 +1,24 @@
+:root {
+    --bs-link-color: var(--bs-primary);
+    --bs-link-hover-color: var(--bs-light);
+}
+
+.url-input {
+    background-color: var(--bs-dark)!important;
+}
+
+.url-input.expand {
+    height: calc(100vh - 30px);
+}
+
+.header.hide, .content.hide {
+    display: none!important;
+}
+
+.icon-dd {
+    transform: translate(-18%, -8%);
+}
+
+a.title:hover {
+    text-decoration: underline!important;
+}
