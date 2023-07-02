@@ -18,7 +18,7 @@ class Layout(html.Div):
                         html.Img(
                             src=dash.get_asset_url('logos/Spotify_Logo_RGB_White.png'),
                             width=120,
-                            className='py-1'
+                            className='py-2'
                         ),
                         html.Div(
                             id='user-header',
@@ -73,7 +73,7 @@ class Layout(html.Div):
                                     className='px-3 py-2 bg-secondary d-flex justify-content-center'
                                 )
                             ],
-                            className='p-2 d-flex justify-content-center'
+                            className='p-3 d-flex justify-content-center'
                         )
                     ],
                     className='content'
@@ -106,6 +106,22 @@ class Layout(html.Div):
                                     dbc.InputGroupText(dbc.Checkbox(id='check-filter-smaller')),
                                     dbc.InputGroupText('Upper bound:'),
                                     dbc.Input(id='filter-smaller-input', type='number', min=0, class_name='bpm-input'),
+                                    dbc.InputGroupText('bpm')
+                                ],
+                                class_name='mb-3'
+                            ),
+                            dbc.InputGroup(
+                                children=[
+                                    dbc.InputGroupText('Double bpm smaller then:'),
+                                    dbc.Input(id='double-smaller-input', type='number', min=0, class_name='bpm-input'),
+                                    dbc.InputGroupText('bpm')
+                                ],
+                                class_name='mb-2'
+                            ),
+                            dbc.InputGroup(
+                                children=[
+                                    dbc.InputGroupText('Half bpm greater then:'),
+                                    dbc.Input(id='half-greater-input', type='number', min=0, class_name='bpm-input'),
                                     dbc.InputGroupText('bpm')
                                 ]
                             )

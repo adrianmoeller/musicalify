@@ -1,3 +1,5 @@
+from typing import Any
+
 import dash
 import dash_bootstrap_components as dbc
 from dash import Dash, Input, Output, html, no_update, ALL, ctx, State
@@ -12,6 +14,8 @@ PLAYLIST_IDENTIFIER = '/playlist/'
 PARAMETER_IDENTIFIER = '?'
 MAX_TRACK_REQ_NO = 50
 MAX_FEATURE_REQ_NO = 100
+DEFAULT_DOUBLE_SMALLER = 50
+DEFAULT_HALF_GREATER = 130
 
 
 def is_spotify_uri(uri: str) -> bool:
@@ -61,10 +65,7 @@ def get_contents(spotify: Spotify, track_ids: list[str]) -> list[dict]:
         track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
         track_data['img_url'] = choose_image_url(track['album']['images'], 50)
         track_data['track_id'] = track['uri']
-        tempo = features[idx]['tempo']
-        if tempo > 130:
-            tempo = tempo / 2
-        track_data['tempo'] = tempo
+        track_data['tempo'] = features[idx]['tempo']
 
         result.append(track_data)
 
@@ -111,11 +112,20 @@ def choose_image_url(images: list[dict], min_height: int) -> str:
 
 
 def filter_tempo(filter_settings: dict[str, float], tempo) -> bool:
-    if 'greater' in filter_settings and tempo < filter_settings['greater']:
-        return False
-    if 'smaller' in filter_settings and tempo > filter_settings['smaller']:
-        return False
+    if filter_settings:
+        if 'greater' in filter_settings and tempo < filter_settings['greater']:
+            return False
+        if 'smaller' in filter_settings and tempo > filter_settings['smaller']:
+            return False
     return True
+
+
+def correct_tempo(double_smaller: float, half_greater: float, tempo) -> Any:
+    if tempo < double_smaller:
+        return tempo * 2
+    if tempo > half_greater:
+        return tempo / 2
+    return tempo
 
 
 def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
@@ -163,13 +173,21 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         if not data:
             raise PreventUpdate
 
+        double_smaller = DEFAULT_DOUBLE_SMALLER
+        half_greater = DEFAULT_HALF_GREATER
+        if filter_settings:
+            if 'double' in filter_settings:
+                double_smaller = filter_settings['double']
+            if 'half' in filter_settings:
+                half_greater = filter_settings['half']
+
         return [
             TrackTile(
                 track_data['title'],
                 track_data['artist'],
                 track_data['img_url'],
                 track_data['track_id'],
-                track_data['tempo']
+                correct_tempo(double_smaller, half_greater, track_data['tempo'])
             )
             for track_data in data
             if filter_tempo(filter_settings, track_data['tempo'])
@@ -288,15 +306,31 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         return not (value_input and str(value_input).isnumeric() and float(value_input) >= 0)
 
     @app.callback(
+        Output('double-smaller-input', 'invalid'),
+        Input('double-smaller-input', 'value')
+    )
+    def validate_double_smaller_input(value_input):
+        return not (value_input and str(value_input).isnumeric() and float(value_input) >= 0)
+
+    @app.callback(
+        Output('half-greater-input', 'invalid'),
+        Input('half-greater-input', 'value')
+    )
+    def validate_half_greater_input(value_input):
+        return not (value_input and str(value_input).isnumeric() and float(value_input) >= 0)
+
+    @app.callback(
         Output('filter-settings', 'data'),
         Input('filter-modal', 'is_open'),
         State('check-filter-greater', 'value'),
         State('check-filter-smaller', 'value'),
         State('filter-greater-input', 'value'),
         State('filter-smaller-input', 'value'),
+        State('double-smaller-input', 'value'),
+        State('half-greater-input', 'value'),
         prevent_initial_call=True
     )
-    def update_filter_settings(is_open, check_greater, check_smaller, greater_input, smaller_input):
+    def update_filter_settings(is_open, check_greater, check_smaller, greater_input, smaller_input, double_input, half_input):
         if is_open:
             raise PreventUpdate
 
@@ -310,6 +344,13 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
                 raise PreventUpdate
             filter_settings['smaller'] = float(smaller_input)
 
+        if not (double_input and str(double_input).isnumeric()):
+            raise PreventUpdate
+        filter_settings['double'] = float(double_input)
+        if not (half_input and str(half_input).isnumeric()):
+            raise PreventUpdate
+        filter_settings['half'] = float(half_input)
+
         return filter_settings
 
     @app.callback(
@@ -317,12 +358,17 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         Output('check-filter-smaller', 'value'),
         Output('filter-greater-input', 'value'),
         Output('filter-smaller-input', 'value'),
+        Output('double-smaller-input', 'value'),
+        Output('half-greater-input', 'value'),
         Input('filter-modal', 'is_open'),
         State('filter-settings', 'data')
     )
-    def update_filter_settings(is_open, filter_settings: dict[str, float]):
+    def read_filter_settings(is_open, filter_settings: dict[str, float]):
         if not is_open:
             raise PreventUpdate
+
+        if not filter_settings:
+            return no_update, no_update, no_update, no_update, DEFAULT_DOUBLE_SMALLER, DEFAULT_HALF_GREATER
 
         check_greater = False
         check_smaller = False
@@ -335,5 +381,13 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         if 'smaller' in filter_settings:
             check_smaller = True
             smaller_input = filter_settings['smaller']
+        if 'double' in filter_settings:
+            double_input = filter_settings['double']
+        else:
+            double_input = DEFAULT_DOUBLE_SMALLER
+        if 'half' in filter_settings:
+            half_input = filter_settings['half']
+        else:
+            half_input = DEFAULT_HALF_GREATER
 
-        return check_greater, check_smaller, greater_input, smaller_input
+        return check_greater, check_smaller, greater_input, smaller_input, double_input, half_input
