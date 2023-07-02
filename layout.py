@@ -9,6 +9,9 @@ class Layout(html.Div):
             id='layout',
             children=[
                 dcc.Location(id='url'),
+                dcc.Store(id='content-storage', storage_type='session'),
+                dcc.Store(id='to-queue-done-storage', storage_type='session'),
+                dcc.Store(id='filter-settings', storage_type='session'),
                 html.Div(
                     id='header',
                     children=[
@@ -39,6 +42,18 @@ class Layout(html.Div):
                 html.Div(
                     id='content',
                     children=[
+                        html.Div(
+                            children=[
+                                dbc.Button(
+                                    id='filter',
+                                    children=[
+                                        html.I(className='bi bi-filter me-1'),
+                                        'Filter'
+                                    ]
+                                )
+                            ],
+                            className='p-1 d-flex justify-content-end'
+                        ),
                         dbc.ListGroup(
                             id='tracks',
                             className='p-1'
@@ -71,6 +86,33 @@ class Layout(html.Div):
                     dismissable=True,
                     style={"position": "fixed", "bottom": 20, "right": 20, "width": 350},
                     is_open=False
+                ),
+                dbc.Modal(
+                    id='filter-modal',
+                    children=[
+                        dbc.ModalHeader(dbc.ModalTitle('Filter settings')),
+                        dbc.ModalBody([
+                            dbc.InputGroup(
+                                children=[
+                                    dbc.InputGroupText(dbc.Checkbox(id='check-filter-greater')),
+                                    dbc.InputGroupText('Lower bound:'),
+                                    dbc.Input(id='filter-greater-input', type='number', min=0, class_name='bpm-input'),
+                                    dbc.InputGroupText('bpm')
+                                ],
+                                class_name='mb-2'
+                            ),
+                            dbc.InputGroup(
+                                children=[
+                                    dbc.InputGroupText(dbc.Checkbox(id='check-filter-smaller')),
+                                    dbc.InputGroupText('Upper bound:'),
+                                    dbc.Input(id='filter-smaller-input', type='number', min=0, class_name='bpm-input'),
+                                    dbc.InputGroupText('bpm')
+                                ]
+                            )
+                        ])
+                    ],
+                    centered=True,
+                    is_open=False
                 )
             ],
             className='p-1'
@@ -79,7 +121,6 @@ class Layout(html.Div):
 
 class TrackTile(dbc.ListGroupItem):
     def __init__(self,
-                 index: int,
                  title: str,
                  artist: str,
                  img_url: str,
@@ -113,12 +154,12 @@ class TrackTile(dbc.ListGroupItem):
                             children=[
                                 html.A(
                                     html.I(className='bi bi-view-stacked'),
-                                    id={'type': 'to-queue', 'id': track_id, 'index': index},
+                                    id={'type': 'to-queue', 'id': track_id},
                                     className='ms-3'
                                 ),
                                 dbc.Tooltip(
                                     'Add to queue',
-                                    target={'type': 'to-queue', 'id': track_id, 'index': index},
+                                    target={'type': 'to-queue', 'id': track_id},
                                     placement='left'
                                 )
                             ],
@@ -128,6 +169,7 @@ class TrackTile(dbc.ListGroupItem):
                             children=[
                                 html.I(className='bi bi-check ms-2')
                             ],
+                            dimension='width',
                             is_open=False
                         )
                     ],

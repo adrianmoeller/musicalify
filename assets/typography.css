@@ -22,3 +22,11 @@
 a.title:hover {
     text-decoration: underline!important;
 }
+
+.bpm-input {
+    max-width: 110px;
+}
+
+.bpm-input.form-control:disabled {
+    background-color: var(--bs-gray-400);
+}
