@@ -10,6 +10,7 @@ from layout import TrackTile
 
 SPOTIFY_URI_START = 'https://open.spotify.com/'
 TRACK_IDENTIFIER = '/track/'
+ALBUM_IDENTIFIER = '/album/'
 PLAYLIST_IDENTIFIER = '/playlist/'
 PARAMETER_IDENTIFIER = '?'
 MAX_TRACK_REQ_NO = 50
@@ -20,6 +21,10 @@ DEFAULT_HALF_GREATER = 130
 
 def is_spotify_uri(uri: str) -> bool:
     return uri.startswith(SPOTIFY_URI_START)
+
+
+def is_album_uri(uri: str) -> bool:
+    return ALBUM_IDENTIFIER in uri
 
 
 def is_track_uri(uri: str) -> bool:
@@ -37,6 +42,15 @@ def parse_track_uri(uri: str):
     else:
         end = len(uri)
     return uri[start + len(TRACK_IDENTIFIER):end]
+
+
+def parse_album_uri(uri: str):
+    start = uri.index(ALBUM_IDENTIFIER)
+    if PARAMETER_IDENTIFIER in uri:
+        end = uri.index(PARAMETER_IDENTIFIER)
+    else:
+        end = len(uri)
+    return uri[start + len(ALBUM_IDENTIFIER):end]
 
 
 def parse_playlist_uri(uri: str):
@@ -148,6 +162,15 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             try:
                 tracks = get_contents(spotify, [track_id])
                 return tracks, '', False, no_update
+            except SpotifyException as e:
+                return no_update, '', True, e.msg
+        elif is_album_uri(uri):
+            album_id = parse_album_uri(uri)
+            try:
+                items = spotify.album_tracks(album_id)['items']
+                track_ids = [item['id'] for item in items]
+                tracks = get_contents(spotify, track_ids)
+                return tracks, '', False, dash.no_update
             except SpotifyException as e:
                 return no_update, '', True, e.msg
         elif is_playlist_uri(uri):
