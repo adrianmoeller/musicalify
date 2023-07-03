@@ -26,7 +26,7 @@ class App:
         self.app.layout = html.Div([Layout()])
 
         self.auth_manager = SpotifyPKCE(
-            scope='user-modify-playback-state'
+            scope='user-modify-playback-state,playlist-read-private'
         )
         self.spotify = spotipy.Spotify(auth_manager=self.auth_manager)
 
