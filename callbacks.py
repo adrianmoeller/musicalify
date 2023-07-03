@@ -62,15 +62,28 @@ def parse_playlist_uri(uri: str):
     return uri[start + len(PLAYLIST_IDENTIFIER):end]
 
 
-def get_contents(spotify: Spotify, track_ids: list[str]) -> list[dict]:
-    if not track_ids:
+def get_content(spotify: Spotify, track_id: str) -> dict:
+    track = get_tracks(spotify, [track_id])[0]
+    features = get_features(spotify, [track_id])[0]
+
+    track_data = dict()
+    track_data['title'] = track['name']
+    track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
+    track_data['img_url'] = choose_image_url(track['album']['images'], 50)
+    track_data['track_id'] = track['uri']
+    track_data['tempo'] = features['tempo']
+
+    return track_data
+
+
+def get_contents(spotify: Spotify, tracks: list[dict]) -> list[dict]:
+    if not tracks:
         return list()
 
-    tracks = get_tracks(spotify, track_ids)
-    features = get_features(spotify, track_ids)
+    features = get_features(spotify, [track['id'] for track in tracks])
 
     result = list()
-    for idx in range(len(track_ids)):
+    for idx in range(len(tracks)):
         track_data = dict()
 
         track = tracks[idx]
@@ -114,6 +127,30 @@ def get_features(spotify: Spotify, track_ids: list[str]):
         result.extend(features)
 
     return result
+
+
+def get_playlist_tracks(spotify: Spotify, playlist_id: str) -> list[dict]:
+    offset = 0
+    tracks = list()
+    while True:
+        items_info = spotify.playlist_items(playlist_id, offset=offset)
+        tracks.extend(item['track'] for item in items_info['items'])
+        if items_info['next'] is None:
+            break
+        offset = items_info['offset'] + len(items_info['items'])
+    return tracks
+
+
+def get_album_tracks(spotify: Spotify, album_id: str) -> list[dict]:
+    offset = 0
+    tracks = list()
+    while True:
+        items_info = spotify.album_tracks(album_id, offset=offset)
+        tracks.extend(items_info['items'])
+        if items_info['next'] is None:
+            break
+        offset = items_info['offset'] + len(items_info['items'])
+    return tracks
 
 
 def choose_image_url(images: list[dict], min_height: int) -> str:
@@ -160,26 +197,24 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         if is_track_uri(uri):
             track_id = parse_track_uri(uri)
             try:
-                tracks = get_contents(spotify, [track_id])
-                return tracks, '', False, no_update
+                content = get_content(spotify, track_id)
+                return [content], '', False, no_update
             except SpotifyException as e:
                 return no_update, '', True, e.msg
         elif is_album_uri(uri):
             album_id = parse_album_uri(uri)
             try:
-                items = spotify.album_tracks(album_id)['items']
-                track_ids = [item['id'] for item in items]
-                tracks = get_contents(spotify, track_ids)
-                return tracks, '', False, dash.no_update
+                album_tracks = get_album_tracks(spotify, album_id)
+                contents = get_contents(spotify, album_tracks)
+                return contents, '', False, dash.no_update
             except SpotifyException as e:
                 return no_update, '', True, e.msg
         elif is_playlist_uri(uri):
             playlist_id = parse_playlist_uri(uri)
             try:
-                items = spotify.playlist_items(playlist_id)['items']
-                track_ids = [item['track']['id'] for item in items]
-                tracks = get_contents(spotify, track_ids)
-                return tracks, '', False, dash.no_update
+                playlist_tracks = get_playlist_tracks(spotify, playlist_id)
+                contents = get_contents(spotify, playlist_tracks)
+                return contents, '', False, dash.no_update
             except SpotifyException as e:
                 return no_update, '', True, e.msg
 
