@@ -6,7 +6,7 @@ from dash import Dash, Input, Output, html, no_update, ALL, ctx, State
 from dash.exceptions import PreventUpdate
 from spotipy import Spotify, SpotifyException, SpotifyPKCE, SpotifyOauthError
 
-from layout import TrackTile
+from layout import TrackTile, IMG_SIZE
 
 SPOTIFY_URI_START = 'https://open.spotify.com/'
 TRACK_IDENTIFIER = '/track/'
@@ -71,14 +71,14 @@ def get_content(spotify: Spotify, track_id: str) -> dict:
     track_data = dict()
     track_data['title'] = track['name']
     track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
-    track_data['img_url'] = choose_image_url(track['album']['images'], 50)
+    track_data['img_url'] = choose_image_url(track['album']['images'])
     track_data['track_id'] = track['uri']
     track_data['tempo'] = features['tempo']
 
     return track_data
 
 
-def get_contents(spotify: Spotify, tracks: list[dict]) -> list[dict]:
+def get_contents(spotify: Spotify, tracks: list[dict], img_url=None) -> list[dict]:
     if not tracks:
         return list()
 
@@ -92,7 +92,7 @@ def get_contents(spotify: Spotify, tracks: list[dict]) -> list[dict]:
 
         track_data['title'] = track['name']
         track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
-        track_data['img_url'] = choose_image_url(track['album']['images'], 50)
+        track_data['img_url'] = img_url if img_url else choose_image_url(track['album']['images'])
         track_data['track_id'] = track['uri']
         track_data['tempo'] = features[idx]['tempo']
 
@@ -155,7 +155,7 @@ def get_album_tracks(spotify: Spotify, album_id: str) -> list[dict]:
     return tracks
 
 
-def choose_image_url(images: list[dict], min_height: int) -> str:
+def choose_image_url(images: list[dict], min_height: int = IMG_SIZE) -> str:
     current_url = ''
     for image in images:
         if image['height'] < min_height:
@@ -207,7 +207,8 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             album_id = parse_album_uri(uri)
             try:
                 album_tracks = get_album_tracks(spotify, album_id)
-                contents = get_contents(spotify, album_tracks)
+                album_img_url = choose_image_url(spotify.album(album_id)['images'])
+                contents = get_contents(spotify, album_tracks, album_img_url)
                 return contents, '', False, dash.no_update
             except SpotifyException as e:
                 return no_update, '', True, e.msg

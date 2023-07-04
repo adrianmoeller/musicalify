@@ -2,6 +2,8 @@ import dash
 import dash_bootstrap_components as dbc
 from dash import html, dcc
 
+IMG_SIZE = 50
+
 
 class Layout(html.Div):
     def __init__(self):
