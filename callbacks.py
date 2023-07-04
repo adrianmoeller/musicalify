@@ -18,6 +18,8 @@ MAX_FEATURE_REQ_NO = 100
 DEFAULT_DOUBLE_SMALLER = 50
 DEFAULT_HALF_GREATER = 130
 
+TRACKS_PER_PAGE = 80
+
 
 def is_spotify_uri(uri: str) -> bool:
     return uri.startswith(SPOTIFY_URI_START)
@@ -222,12 +224,15 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
 
     @app.callback(
         Output('tracks', 'children'),
+        Output('pager', 'max_value'),
+        Output('pager', 'class_name'),
         Input('content-storage', 'modified_timestamp'),
         Input('filter-settings', 'modified_timestamp'),
+        Input('pager', 'active_page'),
         State('content-storage', 'data'),
         State('filter-settings', 'data')
     )
-    def update_content(_0, _1, data: list[dict], filter_settings: dict[str, float]):
+    def update_content(_0, _1, active_page, data: list[dict], filter_settings: dict[str, float]):
         if not data:
             raise PreventUpdate
 
@@ -239,17 +244,38 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             if 'half' in filter_settings:
                 half_greater = filter_settings['half']
 
-        return [
+        for track_data in data:
+            track_data['tempo'] = correct_tempo(double_smaller, half_greater, track_data['tempo'])
+        filtered_data = [
+            track_data
+            for track_data in data
+            if filter_tempo(filter_settings, track_data['tempo'])
+        ]
+
+        if active_page is None:
+            active_page = 1
+        num_of_pages = int(len(filtered_data) / TRACKS_PER_PAGE) + 1
+        if num_of_pages > 1:
+            start_offset = (active_page - 1) * TRACKS_PER_PAGE
+            end_offset = active_page * TRACKS_PER_PAGE
+            if end_offset > len(filtered_data):
+                end_offset = len(filtered_data)
+            display_data = filtered_data[start_offset:end_offset]
+        else:
+            display_data = filtered_data
+
+        tracks = [
             TrackTile(
                 track_data['title'],
                 track_data['artist'],
                 track_data['img_url'],
                 track_data['track_id'],
-                correct_tempo(double_smaller, half_greater, track_data['tempo'])
+                track_data['tempo']
             )
-            for track_data in data
-            if filter_tempo(filter_settings, track_data['tempo'])
+            for track_data in display_data
         ]
+
+        return tracks, num_of_pages, 'm-1' if num_of_pages > 1 else 'd-none'
 
     @app.callback(
         Output('user-header', 'children'),

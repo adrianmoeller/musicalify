@@ -30,3 +30,24 @@ a.title:hover {
 .bpm-input.form-control:disabled {
     background-color: var(--bs-gray-400);
 }
+
+.sticky-btm {
+    position: -webkit-sticky; /* Safari */
+    position: sticky;
+    bottom: 10px;
+}
+
+.pagination {
+    margin-bottom: 0px;
+
+    --bs-pagination-color: var(--bs-white);
+    --bs-pagination-bg: #375A7F;
+    --bs-pagination-hover-color: var(--bs-white);
+    --bs-pagination-hover-bg: #5294D9;
+    --bs-pagination-focus-color: #375A7F;
+    --bs-pagination-focus-bg: var(--bs-white);
+    --bs-pagination-active-color: var(--bs-white);
+    --bs-pagination-active-bg: #5294D9;
+    --bs-pagination-disabled-color: var(--bs-light);
+    --bs-pagination-disabled-bg: var(--bs-secondary);
+}

@@ -60,6 +60,17 @@ class Layout(html.Div):
                         ),
                         html.Div(
                             children=[
+                                dbc.Pagination(
+                                    id='pager',
+                                    previous_next=True,
+                                    max_value=1,
+                                    class_name='d-none'
+                                )
+                            ],
+                            className='d-flex justify-content-center sticky-btm'
+                        ),
+                        html.Div(
+                            children=[
                                 dbc.Button(
                                     children=[
                                         html.Img(
@@ -73,7 +84,7 @@ class Layout(html.Div):
                                     className='px-3 py-2 bg-secondary d-flex justify-content-center'
                                 )
                             ],
-                            className='p-3 d-flex justify-content-center'
+                            className='p-4 d-flex justify-content-center'
                         )
                     ],
                     className='content'
