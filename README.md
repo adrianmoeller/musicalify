@@ -2,6 +2,16 @@
 
 A Spotify application that shows detailed musical information about songs.
 
+### Features (so far):
+
+- Drag and drop Spotify tracks, playlists, and albums to display detailed information
+- Displayed information:
+  - BPM
+    - BPM filter
+    - Correct displayed BPM that exceeds or deceeds a given threshold
+- Select a track to display it in the Spotify app
+- Add a track to the Spotify queue
+
 ## How to run:
 
 1. Clone this repository with `git clone https://github.com/adrianmoeller/musicalify.git`
