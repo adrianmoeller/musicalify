@@ -26,10 +26,10 @@ A Spotify application that shows detailed musical information about songs.
    - Environment variables to set:
       - `SPOTIPY_CLIENT_ID`
       - `SPOTIPY_CLIENT_SECRET`
-      - `SPOTIPY_REDIRECT_URI`
+      - `SPOTIPY_REDIRECT_URI` (choose same URI as described in point 9.)
    - Linux: `export <name>=<value>`
    - Windows: `set <name>=<value>`
 8. Run the server
    - Linux: `python3 main.py`
    - Windows: `python main.py`
-10. To access the web-app, open `http://127.0.0.1:8050/` in your preferred browser
+9. To access the web-app, open `http://127.0.0.1:8050/` in your preferred browser
