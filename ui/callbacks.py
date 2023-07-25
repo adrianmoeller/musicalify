@@ -1,184 +1,17 @@
-from typing import Any
-
 import dash
 import dash_bootstrap_components as dbc
 from dash import Dash, Input, Output, html, no_update, ALL, ctx, State
 from dash.exceptions import PreventUpdate
 from spotipy import Spotify, SpotifyException, SpotifyPKCE, SpotifyOauthError
 
-from layout import TrackTile, IMG_SIZE
+import data.spotify_content_extraction as content_extr
+import data.spotify_uri_utils as uri_utils
+from ui.layout import TrackTile
 
-SPOTIFY_URI_START = 'https://open.spotify.com/'
-TRACK_IDENTIFIER = '/track/'
-ALBUM_IDENTIFIER = '/album/'
-PLAYLIST_IDENTIFIER = '/playlist/'
-PARAMETER_IDENTIFIER = '?'
-MAX_TRACK_REQ_NO = 50
-MAX_FEATURE_REQ_NO = 100
 DEFAULT_DOUBLE_SMALLER = 50
 DEFAULT_HALF_GREATER = 130
 
 TRACKS_PER_PAGE = 80
-
-
-def is_spotify_uri(uri: str) -> bool:
-    return uri.startswith(SPOTIFY_URI_START)
-
-
-def is_album_uri(uri: str) -> bool:
-    return ALBUM_IDENTIFIER in uri
-
-
-def is_track_uri(uri: str) -> bool:
-    return TRACK_IDENTIFIER in uri
-
-
-def is_playlist_uri(uri: str) -> bool:
-    return PLAYLIST_IDENTIFIER in uri
-
-
-def parse_track_uri(uri: str):
-    start = uri.index(TRACK_IDENTIFIER)
-    if PARAMETER_IDENTIFIER in uri:
-        end = uri.index(PARAMETER_IDENTIFIER)
-    else:
-        end = len(uri)
-    return uri[start + len(TRACK_IDENTIFIER):end]
-
-
-def parse_album_uri(uri: str):
-    start = uri.index(ALBUM_IDENTIFIER)
-    if PARAMETER_IDENTIFIER in uri:
-        end = uri.index(PARAMETER_IDENTIFIER)
-    else:
-        end = len(uri)
-    return uri[start + len(ALBUM_IDENTIFIER):end]
-
-
-def parse_playlist_uri(uri: str):
-    start = uri.index(PLAYLIST_IDENTIFIER)
-    if PARAMETER_IDENTIFIER in uri:
-        end = uri.index(PARAMETER_IDENTIFIER)
-    else:
-        end = len(uri)
-    return uri[start + len(PLAYLIST_IDENTIFIER):end]
-
-
-def get_content(spotify: Spotify, track_id: str) -> dict:
-    track = get_tracks(spotify, [track_id])[0]
-    features = get_features(spotify, [track_id])[0]
-
-    track_data = dict()
-    track_data['title'] = track['name']
-    track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
-    track_data['img_url'] = choose_image_url(track['album']['images'])
-    track_data['track_id'] = track['uri']
-    track_data['tempo'] = features['tempo']
-
-    return track_data
-
-
-def get_contents(spotify: Spotify, tracks: list[dict], img_url=None) -> list[dict]:
-    if not tracks:
-        return list()
-
-    features = get_features(spotify, [track['id'] for track in tracks])
-
-    result = list()
-    for idx in range(len(tracks)):
-        track_data = dict()
-
-        track = tracks[idx]
-
-        track_data['title'] = track['name']
-        track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
-        track_data['img_url'] = img_url if img_url else choose_image_url(track['album']['images'])
-        track_data['track_id'] = track['uri']
-        track_data['tempo'] = features[idx]['tempo']
-
-        result.append(track_data)
-
-    return result
-
-
-def get_tracks(spotify: Spotify, track_ids: list[str]):
-    num_of_full_requests = int(len(track_ids) / MAX_TRACK_REQ_NO)
-
-    result = list()
-    for idx in range(num_of_full_requests):
-        tracks = spotify.tracks(track_ids[idx * MAX_TRACK_REQ_NO:(idx + 1) * MAX_TRACK_REQ_NO])
-        result.extend(tracks['tracks'])
-    missing_track_ids = track_ids[num_of_full_requests * MAX_TRACK_REQ_NO:]
-    if missing_track_ids:
-        tracks = spotify.tracks(missing_track_ids)
-        result.extend(tracks['tracks'])
-
-    return result
-
-
-def get_features(spotify: Spotify, track_ids: list[str]):
-    num_of_full_requests = int(len(track_ids) / MAX_FEATURE_REQ_NO)
-
-    result = list()
-    for idx in range(num_of_full_requests):
-        features = spotify.audio_features(track_ids[idx * MAX_FEATURE_REQ_NO:(idx + 1) * MAX_FEATURE_REQ_NO])
-        result.extend(features)
-    missing_track_ids = track_ids[num_of_full_requests * MAX_FEATURE_REQ_NO:]
-    if missing_track_ids:
-        features = spotify.audio_features(missing_track_ids)
-        result.extend(features)
-
-    return result
-
-
-def get_playlist_tracks(spotify: Spotify, playlist_id: str) -> list[dict]:
-    offset = 0
-    tracks = list()
-    while True:
-        items_info = spotify.playlist_items(playlist_id, offset=offset)
-        tracks.extend(item['track'] for item in items_info['items'])
-        if items_info['next'] is None:
-            break
-        offset = items_info['offset'] + len(items_info['items'])
-    return tracks
-
-
-def get_album_tracks(spotify: Spotify, album_id: str) -> list[dict]:
-    offset = 0
-    tracks = list()
-    while True:
-        items_info = spotify.album_tracks(album_id, offset=offset)
-        tracks.extend(items_info['items'])
-        if items_info['next'] is None:
-            break
-        offset = items_info['offset'] + len(items_info['items'])
-    return tracks
-
-
-def choose_image_url(images: list[dict], min_height: int = IMG_SIZE) -> str:
-    current_url = ''
-    for image in images:
-        if image['height'] < min_height:
-            return current_url
-        current_url = image['url']
-    return current_url
-
-
-def filter_tempo(filter_settings: dict[str, float], tempo) -> bool:
-    if filter_settings:
-        if 'greater' in filter_settings and tempo < filter_settings['greater']:
-            return False
-        if 'smaller' in filter_settings and tempo > filter_settings['smaller']:
-            return False
-    return True
-
-
-def correct_tempo(double_smaller: float, half_greater: float, tempo) -> Any:
-    if tempo < double_smaller:
-        return tempo * 2
-    if tempo > half_greater:
-        return tempo / 2
-    return tempo
 
 
 def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
@@ -193,30 +26,30 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         if not uri:
             raise PreventUpdate
 
-        if not is_spotify_uri(uri):
+        if not uri_utils.is_spotify_uri(uri):
             return no_update, '', True, 'No Spotify URL.'
 
-        if is_track_uri(uri):
-            track_id = parse_track_uri(uri)
+        if uri_utils.is_track_uri(uri):
+            track_id = uri_utils.parse_track_uri(uri)
             try:
-                content = get_content(spotify, track_id)
+                content = content_extr.get_content(spotify, track_id)
                 return [content], '', False, no_update
             except SpotifyException as e:
                 return no_update, '', True, e.msg
-        elif is_album_uri(uri):
-            album_id = parse_album_uri(uri)
+        elif uri_utils.is_album_uri(uri):
+            album_id = uri_utils.parse_album_uri(uri)
             try:
-                album_tracks = get_album_tracks(spotify, album_id)
-                album_img_url = choose_image_url(spotify.album(album_id)['images'])
-                contents = get_contents(spotify, album_tracks, album_img_url)
+                album_tracks = content_extr.get_album_tracks(spotify, album_id)
+                album_img_url = content_extr.choose_image_url(spotify.album(album_id)['images'])
+                contents = content_extr.get_contents(spotify, album_tracks, album_img_url)
                 return contents, '', False, dash.no_update
             except SpotifyException as e:
                 return no_update, '', True, e.msg
-        elif is_playlist_uri(uri):
-            playlist_id = parse_playlist_uri(uri)
+        elif uri_utils.is_playlist_uri(uri):
+            playlist_id = uri_utils.parse_playlist_uri(uri)
             try:
-                playlist_tracks = get_playlist_tracks(spotify, playlist_id)
-                contents = get_contents(spotify, playlist_tracks)
+                playlist_tracks = content_extr.get_playlist_tracks(spotify, playlist_id)
+                contents = content_extr.get_contents(spotify, playlist_tracks)
                 return contents, '', False, dash.no_update
             except SpotifyException as e:
                 return no_update, '', True, e.msg
@@ -246,11 +79,11 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
                 half_greater = filter_settings['half']
 
         for track_data in data:
-            track_data['tempo'] = correct_tempo(double_smaller, half_greater, track_data['tempo'])
+            track_data['tempo'] = content_extr.correct_tempo(double_smaller, half_greater, track_data['tempo'])
         filtered_data = [
             track_data
             for track_data in data
-            if filter_tempo(filter_settings, track_data['tempo'])
+            if content_extr.filter_tempo(filter_settings, track_data['tempo'])
         ]
 
         if active_page is None:
