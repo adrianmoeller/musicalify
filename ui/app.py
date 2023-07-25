@@ -4,8 +4,8 @@ from dash import Dash, html
 from dash_extensions.enrich import DashProxy
 from spotipy import Spotify, SpotifyPKCE
 
-from callbacks import callbacks
-from layout import Layout
+from ui.callbacks import callbacks
+from ui.layout import Layout
 
 APP_NAME = 'Musicalify'
 
