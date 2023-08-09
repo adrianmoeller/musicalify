@@ -154,7 +154,12 @@ class TrackTile(dbc.ListGroupItem):
                  artist: str,
                  img_url: str,
                  track_id: str,
-                 tempo: float
+                 tempo: float,
+                 acousticness: float,
+                 danceability: float,
+                 energy: float,
+                 instrumentalness: float,
+                 valence: float
                  ):
         super().__init__(
             children=[
@@ -179,12 +184,27 @@ class TrackTile(dbc.ListGroupItem):
                 html.Div(
                     children=[
                         html.Div(f'{round(tempo)} bpm'),
+                        html.I(
+                            className='bi bi-graph-up ms-2 px-1',
+                            id={'type': 'stats', 'id': track_id}
+                        ),
+                        dbc.Tooltip(
+                            children=[
+                                html.Div(f'Acousticness: {round(acousticness * 100)}%'),
+                                html.Div(f'Danceability: {round(danceability * 100)}%'),
+                                html.Div(f'Energy: {round(energy * 100)}%'),
+                                html.Div(f'Instrumentalness: {round(instrumentalness * 100)}%'),
+                                html.Div(f'Valence: {round(valence * 100)}%')
+                            ],
+                            target={'type': 'stats', 'id': track_id},
+                            placement='left'
+                        ),
                         html.Div(
                             children=[
                                 html.A(
                                     html.I(className='bi bi-view-stacked'),
                                     id={'type': 'to-queue', 'id': track_id},
-                                    className='ms-3'
+                                    className='ms-4 p-1'
                                 ),
                                 dbc.Tooltip(
                                     'Add to queue',
@@ -196,7 +216,7 @@ class TrackTile(dbc.ListGroupItem):
                         dbc.Collapse(
                             id={'type': 'to-queue-done', 'id': track_id},
                             children=[
-                                html.I(className='bi bi-check ms-2')
+                                html.I(className='bi bi-check')
                             ],
                             dimension='width',
                             is_open=False

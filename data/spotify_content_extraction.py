@@ -11,15 +11,7 @@ MAX_FEATURE_REQ_NO = 100
 def get_content(spotify: Spotify, track_id: str) -> dict:
     track = get_tracks(spotify, [track_id])[0]
     features = get_features(spotify, [track_id])[0]
-
-    track_data = dict()
-    track_data['title'] = track['name']
-    track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
-    track_data['img_url'] = choose_image_url(track['album']['images'])
-    track_data['track_id'] = track['uri']
-    track_data['tempo'] = features['tempo']
-
-    return track_data
+    return extract_data(track, features)
 
 
 def get_contents(spotify: Spotify, tracks: list[dict], img_url=None) -> list[dict]:
@@ -30,19 +22,24 @@ def get_contents(spotify: Spotify, tracks: list[dict], img_url=None) -> list[dic
 
     result = list()
     for idx in range(len(tracks)):
-        track_data = dict()
-
-        track = tracks[idx]
-
-        track_data['title'] = track['name']
-        track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
-        track_data['img_url'] = img_url if img_url else choose_image_url(track['album']['images'])
-        track_data['track_id'] = track['uri']
-        track_data['tempo'] = features[idx]['tempo']
-
-        result.append(track_data)
+        result.append(extract_data(tracks[idx], features[idx], img_url))
 
     return result
+
+
+def extract_data(track: dict, features: dict, img_url=None):
+    track_data = dict()
+    track_data['title'] = track['name']
+    track_data['artist'] = ', '.join(artist['name'] for artist in track['artists'])
+    track_data['img_url'] = img_url if img_url else choose_image_url(track['album']['images'])
+    track_data['track_id'] = track['uri']
+    track_data['tempo'] = features['tempo']
+    track_data['acousticness'] = features['acousticness']
+    track_data['danceability'] = features['danceability']
+    track_data['energy'] = features['energy']
+    track_data['instrumentalness'] = features['instrumentalness']
+    track_data['valence'] = features['valence']
+    return track_data
 
 
 def get_tracks(spotify: Spotify, track_ids: list[str]):

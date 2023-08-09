@@ -104,7 +104,12 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
                 track_data['artist'],
                 track_data['img_url'],
                 track_data['track_id'],
-                track_data['tempo']
+                track_data['tempo'],
+                track_data['acousticness'],
+                track_data['danceability'],
+                track_data['energy'],
+                track_data['instrumentalness'],
+                track_data['valence']
             )
             for track_data in display_data
         ]
