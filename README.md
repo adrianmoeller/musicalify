@@ -7,6 +7,7 @@ A Spotify application that shows detailed musical information about songs.
 - Drag and drop Spotify tracks, playlists, and albums to display detailed information
 - Displayed information:
   - BPM
+    - Sort by BPM
     - BPM filter
     - Correct displayed BPM that exceeds or deceeds a given threshold
   - Musical features: acousticness, danceability, energy, instrumentalness, valence
