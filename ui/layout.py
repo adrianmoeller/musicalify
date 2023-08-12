@@ -14,6 +14,7 @@ class Layout(html.Div):
                 dcc.Store(id='content-storage', storage_type='session'),
                 dcc.Store(id='to-queue-done-storage', storage_type='session'),
                 dcc.Store(id='filter-settings', storage_type='session'),
+                dcc.Store(id='bpm-sort-state', storage_type='session'),
                 html.Div(
                     id='header',
                     children=[
@@ -46,6 +47,17 @@ class Layout(html.Div):
                     children=[
                         html.Div(
                             children=[
+                                dbc.Button(
+                                    id='sort',
+                                    children=[
+                                        html.I(
+                                            id='sort-icon',
+                                            className='bi bi-arrow-down-up me-1'
+                                        ),
+                                        'Sort by BPM'
+                                    ],
+                                    className='me-2'
+                                ),
                                 dbc.Button(
                                     id='filter',
                                     children=[

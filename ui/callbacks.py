@@ -13,6 +13,10 @@ DEFAULT_HALF_GREATER = 130
 
 TRACKS_PER_PAGE = 80
 
+SORT_STATE_NONE = 'none'
+SORT_STATE_ASC = 'ascending'
+SORT_STATE_DESC = 'descending'
+
 
 def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
     @app.callback(
@@ -62,11 +66,13 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         Output('pager', 'class_name'),
         Input('content-storage', 'modified_timestamp'),
         Input('filter-settings', 'modified_timestamp'),
+        Input('bpm-sort-state', 'modified_timestamp'),
         Input('pager', 'active_page'),
         State('content-storage', 'data'),
-        State('filter-settings', 'data')
+        State('filter-settings', 'data'),
+        State('bpm-sort-state', 'data')
     )
-    def update_content(_0, _1, active_page, data: list[dict], filter_settings: dict[str, float]):
+    def update_content(_0, _1, _2, active_page, data: list[dict], filter_settings: dict[str, float], bpm_sort_state: str):
         if not data:
             raise PreventUpdate
 
@@ -85,6 +91,11 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             for track_data in data
             if content_extr.filter_tempo(filter_settings, track_data['tempo'])
         ]
+
+        if bpm_sort_state == SORT_STATE_ASC:
+            filtered_data.sort(key=lambda d: d['tempo'])
+        if bpm_sort_state == SORT_STATE_DESC:
+            filtered_data.sort(key=lambda d: d['tempo'], reverse=True)
 
         if active_page is None:
             active_page = 1
@@ -314,3 +325,31 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             half_input = DEFAULT_HALF_GREATER
 
         return check_greater, check_smaller, greater_input, smaller_input, double_input, half_input
+
+    @app.callback(
+        Output('bpm-sort-state', 'data'),
+        Input('sort', 'n_clicks'),
+        State('bpm-sort-state', 'data'),
+        prevent_initial_call=True
+    )
+    def update_bpm_sort_state(_, bpm_sort_state: str):
+        if not bpm_sort_state or bpm_sort_state == SORT_STATE_NONE:
+            return SORT_STATE_ASC
+        if bpm_sort_state == SORT_STATE_ASC:
+            return SORT_STATE_DESC
+        if bpm_sort_state == SORT_STATE_DESC:
+            return SORT_STATE_NONE
+
+    @app.callback(
+        Output('sort-icon', 'className'),
+        Input('bpm-sort-state', 'modified_timestamp'),
+        State('bpm-sort-state', 'data')
+    )
+    def update_bpm_sort_icon(_, bpm_sort_state):
+        margin = ' me-1'
+        if not bpm_sort_state or bpm_sort_state == SORT_STATE_NONE:
+            return 'bi bi-arrow-down-up' + margin
+        if bpm_sort_state == SORT_STATE_ASC:
+            return 'bi bi-sort-numeric-down' + margin
+        if bpm_sort_state == SORT_STATE_DESC:
+            return 'bi bi-sort-numeric-up' + margin
