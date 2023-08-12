@@ -1,4 +1,3 @@
-import dash
 import dash_bootstrap_components as dbc
 from dash import Dash, Input, Output, html, no_update, ALL, ctx, State
 from dash.exceptions import PreventUpdate
@@ -33,34 +32,21 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         if not uri_utils.is_spotify_uri(uri):
             return no_update, '', True, 'No Spotify URL.'
 
-        if uri_utils.is_track_uri(uri):
-            track_id = uri_utils.parse_track_uri(uri)
-            try:
-                content = content_extr.get_content(spotify, track_id)
-                return [content], '', False, no_update
-            except SpotifyException as e:
-                return no_update, '', True, e.msg
-        elif uri_utils.is_album_uri(uri):
-            album_id = uri_utils.parse_album_uri(uri)
-            try:
-                album_tracks = content_extr.get_album_tracks(spotify, album_id)
-                album_img_url = content_extr.choose_image_url(spotify.album(album_id)['images'])
-                contents = content_extr.get_contents(spotify, album_tracks, album_img_url)
-                return contents, '', False, dash.no_update
-            except SpotifyException as e:
-                return no_update, '', True, e.msg
-        elif uri_utils.is_playlist_uri(uri):
-            playlist_id = uri_utils.parse_playlist_uri(uri)
-            try:
-                playlist_tracks = content_extr.get_playlist_tracks(spotify, playlist_id)
-                contents = content_extr.get_contents(spotify, playlist_tracks)
-                return contents, '', False, dash.no_update
-            except SpotifyException as e:
-                return no_update, '', True, e.msg
-
-        return no_update, '', True, 'This kind of URL is not supported.'
+        try:
+            if uri_utils.is_track_uri(uri):
+                content = content_extr.get_content_track(spotify, uri_utils.parse_track_uri(uri))
+            elif uri_utils.is_album_uri(uri):
+                content = content_extr.get_content_album(spotify, uri_utils.parse_album_uri(uri))
+            elif uri_utils.is_playlist_uri(uri):
+                content = content_extr.get_content_playlist(spotify, uri_utils.parse_playlist_uri(uri))
+            else:
+                return no_update, '', True, 'This kind of URL is not supported.'
+            return content, '', False, no_update
+        except SpotifyException as e:
+            return no_update, '', True, e.msg
 
     @app.callback(
+        Output('content-title', 'children'),
         Output('tracks', 'children'),
         Output('pager', 'max_value'),
         Output('pager', 'class_name'),
@@ -72,7 +58,7 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         State('filter-settings', 'data'),
         State('bpm-sort-state', 'data')
     )
-    def update_content(_0, _1, _2, active_page, data: list[dict], filter_settings: dict[str, float], bpm_sort_state: str):
+    def update_content(_0, _1, _2, active_page, data: dict, filter_settings: dict[str, float], bpm_sort_state: str):
         if not data:
             raise PreventUpdate
 
@@ -84,11 +70,12 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             if 'half' in filter_settings:
                 half_greater = filter_settings['half']
 
-        for track_data in data:
+        tracks_data = data['tracks']
+        for track_data in tracks_data:
             track_data['tempo'] = content_extr.correct_tempo(double_smaller, half_greater, track_data['tempo'])
         filtered_data = [
             track_data
-            for track_data in data
+            for track_data in tracks_data
             if content_extr.filter_tempo(filter_settings, track_data['tempo'])
         ]
 
@@ -125,7 +112,9 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             for track_data in display_data
         ]
 
-        return tracks, num_of_pages, 'm-1' if num_of_pages > 1 else 'd-none'
+        title = html.Div(data['title'], className='p-1 mt-3 h3 fw-bold') if data['title'] else None
+
+        return title, tracks, num_of_pages, 'm-1' if num_of_pages > 1 else 'd-none'
 
     @app.callback(
         Output('user-header', 'children'),
@@ -350,6 +339,6 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         if not bpm_sort_state or bpm_sort_state == SORT_STATE_NONE:
             return 'bi bi-arrow-down-up' + margin
         if bpm_sort_state == SORT_STATE_ASC:
-            return 'bi bi-sort-numeric-down' + margin
+            return 'bi bi-arrow-down' + margin
         if bpm_sort_state == SORT_STATE_DESC:
-            return 'bi bi-sort-numeric-up' + margin
+            return 'bi bi-arrow-up' + margin

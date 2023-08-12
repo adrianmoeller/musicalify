@@ -8,13 +8,34 @@ MAX_TRACK_REQ_NO = 50
 MAX_FEATURE_REQ_NO = 100
 
 
-def get_content(spotify: Spotify, track_id: str) -> dict:
+def get_content_track(spotify: Spotify, track_id: str) -> dict:
     track = get_tracks(spotify, [track_id])[0]
     features = get_features(spotify, [track_id])[0]
-    return extract_data(track, features)
+    return {
+        'title': None,
+        'tracks': [extract_data(track, features)]
+    }
 
 
-def get_contents(spotify: Spotify, tracks: list[dict], img_url=None) -> list[dict]:
+def get_content_album(spotify: Spotify, album_id: str) -> dict:
+    album_tracks = get_album_tracks(spotify, album_id)
+    album = spotify.album(album_id)
+    return {
+        'title': album['name'],
+        'tracks': get_content_tracks(spotify, album_tracks, choose_image_url(album['images']))
+    }
+
+
+def get_content_playlist(spotify: Spotify, playlist_id: str) -> dict:
+    playlist_tracks = get_playlist_tracks(spotify, playlist_id)
+    playlist = spotify.playlist(playlist_id)
+    return {
+        'title': playlist['name'],
+        'tracks': get_content_tracks(spotify, playlist_tracks)
+    }
+
+
+def get_content_tracks(spotify: Spotify, tracks: list[dict], img_url=None) -> dict:
     if not tracks:
         return list()
 

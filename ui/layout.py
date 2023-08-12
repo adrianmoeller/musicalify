@@ -46,6 +46,10 @@ class Layout(html.Div):
                     id='content',
                     children=[
                         html.Div(
+                            id='content-title',
+                            className='d-flex justify-content-center'
+                        ),
+                        html.Div(
                             children=[
                                 dbc.Button(
                                     id='sort',
