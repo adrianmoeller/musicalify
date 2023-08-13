@@ -2,7 +2,7 @@ from typing import Any
 
 from spotipy import Spotify
 
-from ui.layout import IMG_SIZE
+from ui.layout.layout import IMG_SIZE
 
 MAX_TRACK_REQ_NO = 50
 MAX_FEATURE_REQ_NO = 100
