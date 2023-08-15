@@ -35,7 +35,7 @@ def get_content_playlist(spotify: Spotify, playlist_id: str) -> dict:
     }
 
 
-def get_content_tracks(spotify: Spotify, tracks: list[dict], img_url=None) -> dict:
+def get_content_tracks(spotify: Spotify, tracks: list[dict], img_url=None) -> list[dict]:
     if not tracks:
         return list()
 
