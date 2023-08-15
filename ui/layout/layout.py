@@ -39,7 +39,7 @@ class Layout(html.Div):
                                     className='alt p-1 ms-1'
                                 )
                             ],
-                            className='d-flex flex-row'
+                            className='d-flex flex-row align-items-center'
                         )
                     ],
                     className='header p-2 d-flex justify-content-between align-items-center'

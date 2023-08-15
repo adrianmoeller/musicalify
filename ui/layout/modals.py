@@ -85,9 +85,9 @@ class EditBPMValue(dbc.Modal):
         super().__init__(
             id='edit-bpm-value-modal',
             children=[
-                dbc.ModalHeader(dbc.ModalTitle('Edit BPM value')),
+                dbc.ModalHeader(dbc.ModalTitle('Edit bpm value')),
                 dbc.ModalBody([
-                    html.P('If the BPM value for this track does not seem correct, a custom value can be provided, which will be locally stored in the browser. Leave blank to reset.'),
+                    html.P('If the bpm value for this track does not seem correct, a custom value can be provided, which will be locally stored in the browser. Leave blank to reset.'),
                     dbc.InputGroup(
                         children=[
                             dbc.InputGroupText('New value:'),

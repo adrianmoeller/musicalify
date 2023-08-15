@@ -47,27 +47,34 @@ class TrackTile(dbc.ListGroupItem):
                         dbc.Popover(
                             id={'type': 'stats-popover', 'id': track_id},
                             children=[
-                                dbc.Table(
-                                    html.Tbody([
-                                        html.Tr([html.Td('Tempo'), html.Td(html.A(
-                                            html.I(className='bi bi-pencil-square'),
-                                            id={'type': 'edit-bpm', 'id': track_id},
-                                            className='alt'
-                                        ))]),
-                                        html.Tr([html.Td('Acousticness'), html.Td(f'{round(acousticness * 100)}%')]),
-                                        html.Tr([html.Td('Danceability'), html.Td(f'{round(danceability * 100)}%')]),
-                                        html.Tr([html.Td('Energy'), html.Td(f'{round(energy * 100)}%')]),
-                                        html.Tr([html.Td('Instrumentalness'), html.Td(f'{round(instrumentalness * 100)}%')]),
-                                        html.Tr([html.Td('Valence'), html.Td(f'{round(valence * 100)}%')]),
-                                    ]),
-                                    borderless=True,
-                                    className='compact'
+                                dbc.PopoverHeader(
+                                    html.A(
+                                        children=[
+                                            html.I(className='bi bi-pencil-square me-2'),
+                                            'Edit bpm'
+                                        ],
+                                        id={'type': 'edit-bpm', 'id': track_id},
+                                        className='alt'
+                                    )
+                                ),
+                                html.Div(
+                                    dbc.Table(
+                                        html.Tbody([
+                                            html.Tr([html.Td('Acousticness'), html.Td(f'{round(acousticness * 100)}%')]),
+                                            html.Tr([html.Td('Danceability'), html.Td(f'{round(danceability * 100)}%')]),
+                                            html.Tr([html.Td('Energy'), html.Td(f'{round(energy * 100)}%')]),
+                                            html.Tr([html.Td('Instrumentalness'), html.Td(f'{round(instrumentalness * 100)}%')]),
+                                            html.Tr([html.Td('Valence'), html.Td(f'{round(valence * 100)}%')]),
+                                        ]),
+                                        borderless=True,
+                                        className='compact'
+                                    ),
+                                    className='p-2'
                                 )
                             ],
                             target={'type': 'stats', 'id': track_id},
                             placement='left',
-                            trigger='hover',
-                            className='p-2'
+                            trigger='hover'
                         ),
                         html.Div(
                             children=[

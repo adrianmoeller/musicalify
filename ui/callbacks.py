@@ -148,9 +148,18 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
 
         if access_token:
             user = spotify.current_user()
-            return [html.I(className='bi bi-person-circle me-2'), html.Div(user['display_name'])]
+            return [
+                html.I(className='bi bi-person-circle me-2'),
+                html.Div(user['display_name'])
+            ]
         else:
-            return [dbc.Button('Log in', id='log-in', href=auth_manager.get_authorize_url(), className='bg-secondary')]
+            return [dbc.Button(
+                children='Log in',
+                id='log-in',
+                href=auth_manager.get_authorize_url(),
+                className='bg-secondary',
+                size='sm'
+            )]
 
     @app.callback(
         Output('to-queue-done-storage', 'data'),
