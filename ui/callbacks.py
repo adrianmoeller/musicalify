@@ -427,14 +427,15 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         if not track_id:
             raise PreventUpdate
 
+        if not corrected_bpm_data:
+            corrected_bpm_data = dict()
+
         if not input_value:
             if track_id in corrected_bpm_data:
                 corrected_bpm_data.pop(track_id)
+                return corrected_bpm_data, False
             else:
                 raise PreventUpdate
-
-        if not corrected_bpm_data:
-            corrected_bpm_data = dict()
 
         try:
             input_value_float = float(input_value)
