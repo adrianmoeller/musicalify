@@ -1,6 +1,8 @@
 :root {
     --bs-link-color: var(--bs-primary);
     --bs-link-hover-color: var(--bs-light);
+    --custom-light-blue: #5294D9;
+    --custom-blue: #375A7F;
 }
 
 .url-input {
@@ -19,8 +21,21 @@
     transform: translate(-18%, -8%);
 }
 
+a:hover {
+    cursor:pointer;
+}
+
 a.title:hover {
     text-decoration: underline!important;
+}
+
+a.alt {
+    color: var(--bs-body-color);
+    text-decoration: none;
+}
+
+a.alt:hover {
+    color: var(--custom-light-blue);
 }
 
 .bpm-input {
@@ -41,13 +56,25 @@ a.title:hover {
     margin-bottom: 0px;
 
     --bs-pagination-color: var(--bs-white);
-    --bs-pagination-bg: #375A7F;
+    --bs-pagination-bg: var(--custom-blue);
     --bs-pagination-hover-color: var(--bs-white);
-    --bs-pagination-hover-bg: #5294D9;
-    --bs-pagination-focus-color: #375A7F;
+    --bs-pagination-hover-bg: var(--custom-light-blue);
+    --bs-pagination-focus-color: var(--custom-blue);
     --bs-pagination-focus-bg: var(--bs-white);
     --bs-pagination-active-color: var(--bs-white);
-    --bs-pagination-active-bg: #5294D9;
+    --bs-pagination-active-bg: var(--custom-light-blue);
     --bs-pagination-disabled-color: var(--bs-light);
     --bs-pagination-disabled-bg: var(--bs-secondary);
+}
+
+.table.compact {
+    margin-bottom: 0;
+}
+
+.table.compact>:not(caption)>*>* {
+        padding: 0.2rem 0.5rem;
+}
+
+.popover {
+    --bs-popover-bg: var(--bs-body-bg);
 }

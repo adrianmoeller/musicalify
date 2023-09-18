@@ -2,7 +2,7 @@ from typing import Any
 
 from spotipy import Spotify
 
-from ui.layout import IMG_SIZE
+from ui.layout.layout import IMG_SIZE
 
 MAX_TRACK_REQ_NO = 50
 MAX_FEATURE_REQ_NO = 100
@@ -35,7 +35,7 @@ def get_content_playlist(spotify: Spotify, playlist_id: str) -> dict:
     }
 
 
-def get_content_tracks(spotify: Spotify, tracks: list[dict], img_url=None) -> dict:
+def get_content_tracks(spotify: Spotify, tracks: list[dict], img_url=None) -> list[dict]:
     if not tracks:
         return list()
 

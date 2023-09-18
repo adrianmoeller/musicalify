@@ -1,11 +1,14 @@
+import base64
+import json
+
 import dash_bootstrap_components as dbc
-from dash import Dash, Input, Output, html, no_update, ALL, ctx, State
+from dash import Dash, Input, Output, html, no_update, ALL, ctx, State, MATCH
 from dash.exceptions import PreventUpdate
 from spotipy import Spotify, SpotifyException, SpotifyPKCE, SpotifyOauthError
 
 import data.spotify_content_extraction as content_extr
 import data.spotify_uri_utils as uri_utils
-from ui.layout import TrackTile
+from ui.layout.track_tile import TrackTile
 
 DEFAULT_DOUBLE_SMALLER = 50
 DEFAULT_HALF_GREATER = 130
@@ -53,12 +56,14 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
         Input('content-storage', 'modified_timestamp'),
         Input('filter-settings', 'modified_timestamp'),
         Input('bpm-sort-state', 'modified_timestamp'),
+        Input('corrected-bpm-storage', 'modified_timestamp'),
         Input('pager', 'active_page'),
         State('content-storage', 'data'),
         State('filter-settings', 'data'),
-        State('bpm-sort-state', 'data')
+        State('bpm-sort-state', 'data'),
+        State('corrected-bpm-storage', 'data')
     )
-    def update_content(_0, _1, _2, active_page, data: dict, filter_settings: dict[str, float], bpm_sort_state: str):
+    def update_content(_0, _1, _2, _3, active_page, data: dict, filter_settings: dict[str, float], bpm_sort_state: str, corrected_bpm_data: dict[str, float]):
         if not data:
             raise PreventUpdate
 
@@ -70,9 +75,16 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             if 'half' in filter_settings:
                 half_greater = filter_settings['half']
 
+        if not corrected_bpm_data:
+            corrected_bpm_data = dict()
+
         tracks_data = data['tracks']
+
         for track_data in tracks_data:
+            if track_data['track_id'] in corrected_bpm_data:
+                track_data['tempo'] = corrected_bpm_data[track_data['track_id']]
             track_data['tempo'] = content_extr.correct_tempo(double_smaller, half_greater, track_data['tempo'])
+
         filtered_data = [
             track_data
             for track_data in tracks_data
@@ -139,9 +151,18 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
 
         if access_token:
             user = spotify.current_user()
-            return [html.I(className='bi bi-person-circle me-2'), html.Div(user['display_name'])]
+            return [
+                html.I(className='bi bi-person-circle me-2'),
+                html.Div(user['display_name'])
+            ]
         else:
-            return [dbc.Button('Log in', id='log-in', href=auth_manager.get_authorize_url(), className='bg-secondary')]
+            return [dbc.Button(
+                children='Log in',
+                id='log-in',
+                href=auth_manager.get_authorize_url(),
+                className='bg-secondary',
+                size='sm'
+            )]
 
     @app.callback(
         Output('to-queue-done-storage', 'data'),
@@ -342,3 +363,160 @@ def callbacks(app: Dash, spotify: Spotify, auth_manager: SpotifyPKCE):
             return 'bi bi-arrow-down' + margin
         if bpm_sort_state == SORT_STATE_DESC:
             return 'bi bi-arrow-up' + margin
+
+    @app.callback(
+        Output('local-settings-modal', 'is_open'),
+        Input('local-settings', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def open_local_settings(_):
+        return True
+
+    @app.callback(
+        Output('reset-bpm-prompt', 'is_open'),
+        Input('reset-corrected-bpm', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def reset_corrected_bpm_values_to_prompt(_):
+        return True
+
+    @app.callback(
+        Output('corrected-bpm-storage', 'clear_data'),
+        Output('reset-bpm-prompt', 'is_open', allow_duplicate=True),
+        Input('reset-corrected-bpm-prompt', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def reset_corrected_bpm_values(_):
+        return True, False
+
+    @app.callback(
+        Output('reset-bpm-prompt', 'is_open', allow_duplicate=True),
+        Input('reset-corrected-bpm-cancel', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def reset_corrected_bpm_values_cancel(_):
+        return False
+
+    @app.callback(
+        Output('edit-bpm-value-modal', 'is_open', allow_duplicate=True),
+        Output('edit-bpm-value-input', 'value'),
+        Output('edit-bpm-value-track-id', 'children'),
+        Output('error-bar', 'is_open', allow_duplicate=True),
+        Output('error-bar', 'children', allow_duplicate=True),
+        Input({'type': 'edit-bpm', 'id': ALL}, 'n_clicks'),
+        State('corrected-bpm-storage', 'data'),
+        prevent_initial_call=True
+    )
+    def open_edit_bpm_value(n_clicks, corrected_bpm_data: dict[str, float]):
+        if all(n is None for n in n_clicks):
+            raise PreventUpdate
+
+        _id = ctx.triggered_id
+        track_id = _id['id']
+        if not track_id:
+            raise PreventUpdate
+
+        try:
+            if corrected_bpm_data and track_id in corrected_bpm_data:
+                tempo = corrected_bpm_data[track_id]
+            else:
+                track_data = content_extr.get_content_track(spotify, track_id)
+                tempo = round(track_data['tracks'][0]['tempo'])
+            return True, tempo, track_id, False, no_update
+        except SpotifyException as e:
+            return False, no_update, no_update, True, e.msg
+
+    @app.callback(
+        Output({'type': 'stats-popover', 'id': MATCH}, 'is_open'),
+        Input({'type': 'edit-bpm', 'id': MATCH}, 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def close_popover_on_edit_click(_):
+        return False
+
+    @app.callback(
+        Output('corrected-bpm-storage', 'data'),
+        Output('edit-bpm-value-modal', 'is_open', allow_duplicate=True),
+        Input('edit-bpm-value-save', 'n_clicks'),
+        State('edit-bpm-value-input', 'value'),
+        State('edit-bpm-value-track-id', 'children'),
+        State('corrected-bpm-storage', 'data'),
+        prevent_initial_call=True
+    )
+    def save_bpm_value(_, input_value, track_id, corrected_bpm_data: dict[str, float]):
+        if not track_id:
+            raise PreventUpdate
+
+        if not corrected_bpm_data:
+            corrected_bpm_data = dict()
+
+        if not input_value:
+            if track_id in corrected_bpm_data:
+                corrected_bpm_data.pop(track_id)
+                return corrected_bpm_data, False
+            else:
+                raise PreventUpdate
+
+        try:
+            input_value_float = float(input_value)
+            corrected_bpm_data[track_id] = input_value_float
+            return corrected_bpm_data, False
+        except Exception:
+            raise PreventUpdate
+
+    @app.callback(
+        Output('num-bpm-values', 'children'),
+        Input('corrected-bpm-storage', 'modified_timestamp'),
+        Input('corrected-bpm-storage', 'clear_data'),
+        State('corrected-bpm-storage', 'data')
+    )
+    def count_num_bpm_values(_0, _1, bpm_data):
+        if not bpm_data:
+            return 0
+        return len(bpm_data)
+
+    @app.callback(
+        Output('export-bpm-values-downloader', 'data'),
+        Input('export-bpm-values', 'n_clicks'),
+        State('corrected-bpm-storage', 'data'),
+        prevent_initial_call=True
+    )
+    def export_bpm_values(_, bpm_data):
+        if not bpm_data:
+            raise PreventUpdate
+
+        return dict(
+            content=json.dumps(bpm_data),
+            filename='bpm-values.musicalify.json'
+        )
+
+    def is_numeric(value):
+        try:
+            float(value)
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    @app.callback(
+        Output('corrected-bpm-storage', 'data', allow_duplicate=True),
+        Output('import-bpm-values-uploader', 'contents'),
+        Output('error-bar', 'is_open', allow_duplicate=True),
+        Output('error-bar', 'children', allow_duplicate=True),
+        Input('import-bpm-values-uploader', 'contents'),
+        prevent_initial_call=True
+    )
+    def import_bpm_values(imported_content):
+        if not imported_content:
+            raise PreventUpdate
+
+        content_type, content_str = imported_content.split(',')
+        decoded = base64.b64decode(content_str).decode('utf-8')
+        try:
+            bpm_data = json.loads(decoded)
+            if type(bpm_data) is dict:
+                if all([type(key) is str and is_numeric(value) for key, value in bpm_data.items()]):
+                    return bpm_data, None, False, ''
+        except json.JSONDecodeError:
+            pass
+
+        return no_update, None, True, 'BPM values could not be imported due to incorrect file format.'
