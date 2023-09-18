@@ -1,5 +1,5 @@
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import html, dcc
 
 
 class FilterSettings(dbc.Modal):
@@ -58,20 +58,72 @@ class LocalSettings(dbc.Modal):
                 dbc.ModalBody([
                     dbc.Card(
                         children=[
+                            dbc.CardHeader(
+                                children=[
+                                    'Number of BPM values stored:',
+                                    html.Div(id='num-bpm-values', className='ms-2')
+                                ],
+                                className='d-flex'
+                            ),
                             dbc.CardBody(
-                                [
+                                children=[
+                                    dcc.Upload(
+                                        dbc.Button('Import', id='import-bpm-values'),
+                                        id='import-bpm-values-uploader',
+                                        accept='.musicalify.json',
+                                        max_size=5242880,  # =5MB
+                                        className='me-3'
+                                    ),
+                                    dbc.Button('Export', id='export-bpm-values'),
+                                    dcc.Download(id='export-bpm-values-downloader')
+                                ],
+                                className='d-flex'
+                            )
+                        ],
+                        color='primary',
+                        outline=True,
+                        className='mb-3'
+                    ),
+                    dbc.Card(
+                        children=[
+                            dbc.CardBody(
+                                children=[
                                     'Reset all manually corrected BPM values:',
                                     dbc.Button(
                                         'Reset',
                                         id='reset-corrected-bpm',
                                         color='danger'
-                                    )
+                                    ),
+                                    ResetBPMValuesPrompt()
                                 ],
                                 className='d-flex justify-content-between align-items-center'
                             )
                         ],
                         color='danger',
                         outline=True
+                    )
+                ])
+            ],
+            centered=True,
+            is_open=False
+        )
+
+
+class ResetBPMValuesPrompt(dbc.Modal):
+    def __init__(self):
+        super().__init__(
+            id='reset-bpm-prompt',
+            children=[
+                dbc.ModalBody('You are going to delete all stored BPM corrections. This cannot be undone. Are you sure?'),
+                dbc.ModalFooter([
+                    dbc.Button(
+                        'Cancel',
+                        id='reset-corrected-bpm-cancel',
+                    ),
+                    dbc.Button(
+                        'Delete',
+                        id='reset-corrected-bpm-prompt',
+                        color='danger'
                     )
                 ])
             ],
