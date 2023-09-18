@@ -9,7 +9,9 @@ A Spotify application that shows detailed musical information about songs.
   - BPM
     - Sort by BPM
     - BPM filter
-    - Correct displayed BPM that exceeds or deceeds a given threshold
+    - Half/double displayed BPM that exceeds/deceeds a given threshold
+    - Manually correct a track's BPM value (stored offline)
+    - Import/export stored BPM correction values
   - Musical features: acousticness, danceability, energy, instrumentalness, valence
 - Select a track to display it in the Spotify app
 - Add a track to the Spotify queue
